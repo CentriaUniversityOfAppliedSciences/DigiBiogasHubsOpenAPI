@@ -1,0 +1,11 @@
+services:
+  openapi:
+    restart: always
+    build: .
+    env_file:
+      - .env
+    ports:
+      - "55555:55555"
+    volumes:
+      - /app/node_modules
+    network_mode: "host"

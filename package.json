@@ -1,0 +1,32 @@
+{
+  "name": "digibiogashubsopenapi",
+  "version": "1.0.0",
+  "description": "Open API for DigiBiogasHubs project",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CentriaUniversityOfAppliedSciences/DigiBiogasHubsOpenAPI.git"
+  },
+  "keywords": [
+    "DigiBiogasHubs",
+    "Centria"
+  ],
+  "author": "Centria UAS",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/CentriaUniversityOfAppliedSciences/DigiBiogasHubsOpenAPI/issues"
+  },
+  "homepage": "https://github.com/CentriaUniversityOfAppliedSciences/DigiBiogasHubsOpenAPI#readme",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^17.0.0",
+    "express": "^5.1.0",
+    "morgan": "^1.10.0",
+    "pg": "^8.16.3"
+  }
+}
