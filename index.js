@@ -36,12 +36,54 @@ app.use(async (req, res, next) => {
   }
 });
 
-app.post('/test', (req, res) => {
+/*app.post('/test', (req, res) => {
   console.log('Received test request:', req.body);
   res.send('Hello from DigiBiogasHubsOpenAPI!');
+});*/
+
+/**
+ * Endpoint to get count of offers
+ * @params startDate (optional) - Start date for filtering offers
+ * @params endDate (optional) - End date for filtering offers
+ * @response {String} type - Type of response, always "result"
+ * @response {String} response - Response status, either "ok" or "error"
+ * @response {Object} data - Contains the count of offers in the format { count: <number> }
+ * @response {String} error - Error message if any error occurs
+ */
+
+app.post('/statistics/offers', async (req, res) => {
+  try{
+    const pool = await createConnection();
+    let queryText = 'SELECT COUNT(id) from "Offers" WHERE ';
+    let queryParams = [];
+
+    if (req.body.startDate && req.body.endDate) {
+      queryText += '"startDate" < $1 AND "endDate" > $2';
+      queryParams = [req.body.startDate, req.body.endDate];
+    } else if (req.body.startDate) {
+      queryText += '"startDate" < $1 AND "endDate" > now()';
+      queryParams = [req.body.startDate];
+    } else if (req.body.endDate) {
+      queryText += '"startDate" < now() AND "endDate" > $1';
+      queryParams = [req.body.endDate];
+    } else {
+      queryText += '"startDate" < now() AND "endDate" > now()';
+    }
+
+    const result = await query(pool, queryText, queryParams);
+    closeConnection(pool);
+    res.json({
+      type: "result",
+      response: "ok",
+      data: result.rows[0]
+    });
+    
+  }
+  catch(err){
+    console.error('Error in /statistics/offers:', err);
+    return res.status(500).json({ type:"result", response: "error", error: 'Internal server error' });
+  }
 });
-
-
 
 //these must be at the bottom but before listen !!!!
 
