@@ -19,6 +19,20 @@ export default pgconnector;
         });
         return client;
     };
+
+    export async function createConnectionToSensorDataDB(){
+        const client = new pg.Pool({
+            user: process.env.POSTGRES_USER,
+            host: process.env.DB_HOST,
+            port: process.env.DB_PORT,
+            max: 20,
+            idleTimeoutMillis: 30000,
+            connectionTimeoutMillis: 2000,
+            database: process.env.SENSOR_DB,
+            password: process.env.POSTGRES_PASSWORD
+        });
+        return client;
+    };
     
     export async function closeConnection(client){
         return await client.end();
@@ -48,3 +62,4 @@ export default pgconnector;
         }
         
     };
+    

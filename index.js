@@ -2,7 +2,8 @@ import dotenv from 'dotenv';
 import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
-import { createConnection, closeConnection, query } from './pgconnector.js';
+import { createConnection, closeConnection, query, createConnectionToSensorDataDB } from './pgconnector.js';
+import { createSensorTable } from './createSensorTable.js';
 dotenv.config();
 
 const app = express();
@@ -24,7 +25,7 @@ app.use(async (req, res, next) => {
   }
   try {
     const pool = await createConnection();
-    const result = await query(pool,'SELECT * FROM openapis WHERE value = $1', [apiKey]);
+    const result = await query(pool, 'SELECT * FROM "Openapis" WHERE value = $1', [apiKey]);
     if (result.rows.length === 0) {
       return res.status(403).json({ error: 'Invalid API key' });
     }
@@ -32,9 +33,12 @@ app.use(async (req, res, next) => {
     closeConnection(pool);
     next();
   } catch (err) {
+    console.log('Error in API key middleware:', err);
     return res.status(500).json({ error: 'Database error' });
   }
 });
+
+await createSensorTable();
 
 /*app.post('/test', (req, res) => {
   console.log('Received test request:', req.body);
@@ -52,7 +56,7 @@ app.use(async (req, res, next) => {
  */
 
 app.post('/statistics/offers', async (req, res) => {
-  try{
+  try {
     const pool = await createConnection();
     let queryText = 'SELECT COUNT(id) from "Offers" WHERE ';
     let queryParams = [];
@@ -77,11 +81,50 @@ app.post('/statistics/offers', async (req, res) => {
       response: "ok",
       data: result.rows[0]
     });
-    
+
   }
-  catch(err){
+  catch (err) {
     console.error('Error in /statistics/offers:', err);
-    return res.status(500).json({ type:"result", response: "error", error: 'Internal server error' });
+    return res.status(500).json({ type: "result", response: "error", error: 'Internal server error' });
+  }
+});
+
+/** Endpoint to store sensor data in db 
+ * @params sensorId - ID of the sensor
+ * @params sensorName - Name of the sensor
+ * @params value - Value of the sensor data 
+ * @params unit - Unit of the sensor data
+ * @params timestamp - Timestamp of the sensor data
+ * @response {String} type - Type of response, always "result"
+ * @response {String} response - Response status, either "ok" or "error"
+ * 
+ * */
+app.post('/sensors/data', async (req, res) => {
+  const { sensorID, sensorName, value, unit, sensorReadingTimestamp } = req.body;
+
+  if (!sensorID || !sensorName || value === undefined || !unit || !sensorReadingTimestamp) {
+    return res.status(400).json({ type: "result", response: "error", error: 'Missing required fields' });
+  }
+
+  try {
+    const pool = await createConnectionToSensorDataDB();
+    const insertQuery = `
+      INSERT INTO "SensorData" ("sensorID", "sensorName", "value", "unit", "sensorReadingTimestamp")
+      VALUES ($1, $2, $3, $4, $5)
+      RETURNING *;
+    `;
+    const queryParams = [sensorID, sensorName, value, unit, sensorReadingTimestamp];
+    const result = await query(pool, insertQuery, queryParams);
+    closeConnection(pool);
+
+    res.json({
+      type: "result",
+      response: "ok",
+      data: result.rows[0]
+    });
+  } catch (err) {
+    console.error('Error in /sensors/data:', err);
+    return res.status(500).json({ type: "result", response: "error", error: 'Internal server error' });
   }
 });
 
@@ -97,7 +140,7 @@ app.use((req, res) => {
 
 // custom error handler
 app.use((err, req, res, next) => {
-  
+
   console.error(err.stack)
   res.status(500).send('Something broke!')
 })
